@@ -218,8 +218,36 @@ def sklearn_splits(clf):
         splits.append((int(tree.feature[i]), round(float(tree.threshold[i]), 3)))
     return splits
 
-# Step 7 - compare_trees (not yet solved)
-# TODO: implement
+# Step 7 - compare_trees
+def _my_splits(tree):
+    """Depth-first, left-first (feature, rounded threshold) pairs for internal nodes."""
+    if tree is None or tree["leaf"]:
+        return []
+    here = (int(tree["feature"]), round(float(tree["threshold"]), 3))
+    return [here] + _my_splits(tree["left"]) + _my_splits(tree["right"])
+
+
+def compare_trees(X, y, max_depth=2):
+    X = np.asarray(X)
+    y = np.asarray(y)
+
+    mine = grow_tree(X, y, max_depth=max_depth, min_samples_leaf=1)
+    clf = fit_sklearn_tree(X, y, max_depth=max_depth)
+
+    my_splits = _my_splits(mine)
+    their_splits = sklearn_splits(clf)
+
+    same_splits = my_splits == their_splits
+
+    my_preds = predict_tree(mine, X)
+    their_preds = clf.predict(X)
+    agreement = float((my_preds == their_preds).mean()) if len(y) else 1.0
+
+    return {
+        "same_splits": same_splits,
+        "agreement": agreement,
+        "my_splits": my_splits,
+    }
 
 # Step 8 - moons_data (not yet solved)
 # TODO: implement
