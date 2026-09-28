@@ -261,8 +261,24 @@ def moons_data(n_samples=300, noise=0.25, random_state=42, test_size=0.3):
     )
     return X_train, X_test, y_train, y_test
 
-# Step 9 - overfit_vs_regularized (not yet solved)
-# TODO: implement
+# Step 9 - overfit_vs_regularized
+from sklearn.metrics import accuracy_score
+
+
+def overfit_vs_regularized(X_train, X_test, y_train, y_test, min_samples_leaf=5):
+    def _evaluate(clf):
+        return {
+            "train_acc": float(accuracy_score(y_train, clf.predict(X_train))),
+            "test_acc": float(accuracy_score(y_test, clf.predict(X_test))),
+            "leaves": int(clf.get_n_leaves()),
+        }
+
+    free = fit_sklearn_tree(X_train, y_train, max_depth=None, min_samples_leaf=1)
+    reg = fit_sklearn_tree(
+        X_train, y_train, max_depth=None, min_samples_leaf=min_samples_leaf
+    )
+
+    return {"free": _evaluate(free), "regularized": _evaluate(reg)}
 
 # Step 10 - rotation_sensitivity (not yet solved)
 # TODO: implement
