@@ -80,8 +80,97 @@ def best_split(X, y):
 
     return best_feature, best_threshold, float(best_gain)
 
-# Step 3 - grow_tree (not yet solved)
-# TODO: implement
+# Step 3 - grow_tree
+import numpy as np
+
+
+def _majority(y):
+    """Majority class as int; ties go to the smallest class."""
+    vals, counts = np.unique(y, return_counts=True)
+    top = counts.max()
+    return int(vals[counts == top].min())
+
+
+def _best_split_constrained(X, y, min_samples_leaf):
+    """Like best_split, but rejects splits with a child smaller than min_samples_leaf."""
+    X = np.asarray(X)
+    y = np.asarray(y)
+    n = y.size
+    if n == 0 or X.size == 0:
+        return None, None, 0.0
+    if X.ndim == 1:
+        X = X.reshape(-1, 1)
+
+    parent = gini(y)
+    best_feature = None
+    best_threshold = None
+    best_gain = 0.0
+
+    for j in range(X.shape[1]):
+        vals = np.unique(X[:, j])
+        if vals.size < 2:
+            continue
+        thresholds = (vals[:-1] + vals[1:]) / 2.0
+        for t in thresholds:
+            left_mask = X[:, j] <= t
+            n_left = int(np.sum(left_mask))
+            n_right = n - n_left
+            if n_left < min_samples_leaf or n_right < min_samples_leaf:
+                continue
+            left_gini = gini(y[left_mask])
+            right_gini = gini(y[~left_mask])
+            weighted = (n_left * left_gini + n_right * right_gini) / n
+            gain = parent - weighted
+            # strict > keeps the first best on ties
+            if gain > best_gain:
+                best_gain = gain
+                best_feature = j
+                best_threshold = float(t)
+
+    if best_feature is None:
+        return None, None, 0.0
+    return best_feature, best_threshold, float(best_gain)
+
+
+def grow_tree(X, y, max_depth=2, min_samples_leaf=1, depth=0):
+    X = np.asarray(X)
+    y = np.asarray(y)
+    if X.ndim == 1:
+        X = X.reshape(-1, 1)
+    n = int(y.size)
+
+    leaf = {
+        "leaf": True,
+        "value": _majority(y) if n > 0 else 0,
+        "n": n,
+    }
+
+    # Stopping rules
+    if n == 0:
+        return leaf
+    if np.unique(y).size == 1:            # pure node
+        return leaf
+    if depth >= max_depth:                 # depth cap
+        return leaf
+
+    feature, threshold, gain = _best_split_constrained(X, y, min_samples_leaf)
+    if feature is None or gain <= 0:       # no useful split
+        return leaf
+
+    left_mask = X[:, feature] <= threshold
+    left = grow_tree(X[left_mask], y[left_mask],
+                     max_depth, min_samples_leaf, depth + 1)
+    right = grow_tree(X[~left_mask], y[~left_mask],
+                      max_depth, min_samples_leaf, depth + 1)
+
+    return {
+        "leaf": False,
+        "feature": feature,
+        "threshold": threshold,
+        "n": n,
+        "left": left,
+        "right": right,
+    }
 
 # Step 4 - predict_tree (not yet solved)
 # TODO: implement
