@@ -280,8 +280,41 @@ def overfit_vs_regularized(X_train, X_test, y_train, y_test, min_samples_leaf=5)
 
     return {"free": _evaluate(free), "regularized": _evaluate(reg)}
 
-# Step 10 - rotation_sensitivity (not yet solved)
-# TODO: implement
+# Step 10 - rotation_sensitivity
+import numpy as np
+from sklearn.metrics import accuracy_score
+
+
+def rotation_sensitivity(X_train, X_test, y_train, y_test,
+                         degrees=45.0, min_samples_leaf=5):
+    X_train = np.asarray(X_train)
+    X_test = np.asarray(X_test)
+
+    theta = np.deg2rad(degrees)
+    c, s = np.cos(theta), np.sin(theta)
+    R = np.array([[c, -s],
+                  [s,  c]])
+
+    X_train_r = X_train @ R.T
+    X_test_r  = X_test  @ R.T
+
+    # Same model capacity, only the feature frame changed
+    clf_orig = fit_sklearn_tree(
+        X_train, y_train, max_depth=None, min_samples_leaf=min_samples_leaf
+    )
+    clf_rot = fit_sklearn_tree(
+        X_train_r, y_train, max_depth=None, min_samples_leaf=min_samples_leaf
+    )
+
+    original_acc = float(accuracy_score(y_test, clf_orig.predict(X_test)))
+    rotated_acc  = float(accuracy_score(y_test, clf_rot.predict(X_test_r)))
+    drop = round(original_acc - rotated_acc, 4)
+
+    return {
+        "original_acc": original_acc,
+        "rotated_acc": rotated_acc,
+        "drop": drop,
+    }
 
 # Step 11 - regression_tree (not yet solved)
 # TODO: implement
