@@ -349,6 +349,15 @@ def save_and_reload_tree(clf, path):
     joblib.dump(clf, path)
     return joblib.load(path)
 
-# Step 14 - predict_species (not yet solved)
-# TODO: implement
+# Step 14 - predict_species
+import numpy as np
+
+
+def predict_species(clf, measurements, target_names):
+    X = np.asarray(measurements, dtype=float)
+    if X.ndim == 1:
+        X = X.reshape(1, -1)
+
+    labels = clf.predict(X)
+    return [str(target_names[int(lbl)]) for lbl in labels]
 
